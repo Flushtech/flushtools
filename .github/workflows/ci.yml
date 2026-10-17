@@ -1,0 +1,142 @@
+name: CI
+
+# Runs on pull requests, and is reused by release.yml (which runs it on every
+# push to main and publishes its artifacts when a release is cut).
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # Pinned so builds are reproducible. Bump deliberately.
+  ODIN_RELEASE: dev-2026-09
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            libfile: libflushtools.so
+            archive: flushtools-linux-x86_64.zip
+          - os: macos-latest
+            platform: macos-arm64
+            libfile: libflushtools.dylib
+            archive: flushtools-macos-arm64.zip
+          - os: windows-latest
+            platform: windows-x86_64
+            libfile: flushtools.dll
+            archive: flushtools-windows-x86_64.zip
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: laytan/setup-odin@v2
+        with:
+          release: ${{ env.ODIN_RELEASE }}
+          token: ${{ github.token }}
+
+      - name: Odin version
+        run: odin version
+
+      - name: Odin unit tests
+        run: odin test tests -vet -strict-style
+
+      - name: Build shared library
+        run: |
+          mkdir -p build
+          odin build src -build-mode:dll -out:build/${{ matrix.libfile }} -o:speed -vet -strict-style
+
+      - name: Verify build outputs
+        run: |
+          ls -la build
+          test -f "build/${{ matrix.libfile }}"
+          if [ "$RUNNER_OS" = "Windows" ]; then test -f build/flushtools.lib; fi
+
+      - name: C ABI test (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cc -std=c99 -Wall -Wextra -Wpedantic -Werror -Iinclude tests/c/abi_test.c \
+            -Lbuild -lflushtools -lm -o build/abi_test
+          LD_LIBRARY_PATH=build DYLD_LIBRARY_PATH=build ./build/abi_test
+
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: C ABI test (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          cl /nologo /W4 /Iinclude tests\c\abi_test.c build\flushtools.lib /Fe:build\abi_test.exe /Fo:build\
+          if errorlevel 1 exit /b 1
+          build\abi_test.exe
+
+      # Each archive contains ONLY the header and that platform's library
+      # (Windows also needs the import library to link against the DLL).
+      - name: Package (Linux/macOS zip)
+        if: runner.os != 'Windows'
+        run: zip -j "${{ matrix.archive }}" include/flushtools.h "build/${{ matrix.libfile }}"
+
+      - name: Package (Windows zip)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path include\flushtools.h, build\flushtools.dll, build\flushtools.lib -DestinationPath "${{ matrix.archive }}"
+
+      - name: Show archive contents (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: unzip -l "${{ matrix.archive }}"
+
+      - name: Show archive contents (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path "${{ matrix.archive }}"))
+          $zip.Entries | ForEach-Object { $_.FullName }
+          $zip.Dispose()
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: ${{ matrix.archive }}
+          if-no-files-found: error
+
+  sanitizers:
+    name: sanitizers (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [asan, tsan]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: laytan/setup-odin@v2
+        with:
+          release: ${{ env.ODIN_RELEASE }}
+          token: ${{ github.token }}
+
+      # Sanitizer runtimes can crash on kernels with high ASLR entropy.
+      - name: Lower ASLR entropy for sanitizers
+        run: sudo sysctl -w vm.mmap_rnd_bits=28 || true
+
+      - name: Show toolchain
+        run: |
+          odin version
+          clang --version
+
+      # asan: AddressSanitizer + LeakSanitizer + UBSan (Odin lib built with
+      #       -sanitize:address; C tests built with clang -fsanitize)
+      # tsan: ThreadSanitizer
+      - name: Run ${{ matrix.mode }}
+        run: bash scripts/sanitize.sh ${{ matrix.mode }}

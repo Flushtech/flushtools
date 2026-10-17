@@ -1,0 +1,129 @@
+/*
+ * FlushTools - small systems utilities with a stable C ABI.
+ *
+ * Implemented in Odin, shipped as a shared library (flushtools.dll,
+ * libflushtools.so, libflushtools.dylib). Link against it and include this
+ * header; there is nothing else to configure.
+ *
+ * Supported targets: 64-bit (x86_64, arm64).
+ * MIT License - Copyright (c) 2026 Austin Clark
+ */
+#ifndef FLUSHTOOLS_H
+#define FLUSHTOOLS_H
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Updated automatically by release-please. */
+#define FLUSHTOOLS_VERSION "0.0.0" /* x-release-please-version */
+
+/* Library version string; matches FLUSHTOOLS_VERSION if header and binary agree. */
+const char *fl_version(void);
+
+/* ---------------------------------------------------------------------------
+ * Arena: bump allocator over a caller-owned buffer.
+ * ------------------------------------------------------------------------- */
+
+typedef struct fl_arena {
+  uint8_t *buffer;
+  size_t capacity;
+  size_t offset;
+} fl_arena;
+
+void fl_arena_init(fl_arena *arena, uint8_t *buffer, size_t capacity);
+/* 8-byte aligned. Returns NULL when out of space. Memory is not zeroed. */
+void *fl_arena_alloc(fl_arena *arena, size_t size);
+/* `alignment` must be a non-zero power of two. */
+void *fl_arena_alloc_aligned(fl_arena *arena, size_t size, size_t alignment);
+void fl_arena_reset(fl_arena *arena);
+size_t fl_arena_remaining(const fl_arena *arena);
+
+/* ---------------------------------------------------------------------------
+ * Bit packing (LSB-first). Counts are 0..32 bits per call.
+ * ------------------------------------------------------------------------- */
+
+typedef struct fl_bit_writer {
+  uint8_t *buffer;
+  uint64_t current_bit;
+  uint64_t bit_capacity;
+} fl_bit_writer;
+
+typedef struct fl_bit_reader {
+  const uint8_t *buffer;
+  uint64_t current_bit;
+  uint64_t bit_capacity;
+} fl_bit_reader;
+
+/* Zeroes the buffer. Returns false on NULL arguments. */
+bool fl_bit_writer_init(fl_bit_writer *writer, uint8_t *buffer,
+                        size_t byte_capacity);
+/* All-or-nothing: returns false (and writes nothing) if the bits do not fit. */
+bool fl_bit_writer_write(fl_bit_writer *writer, uint32_t value, int count);
+/* Bytes to send after writing. */
+size_t fl_bit_writer_bytes_used(const fl_bit_writer *writer);
+
+bool fl_bit_reader_init(fl_bit_reader *reader, const uint8_t *buffer,
+                        size_t byte_length);
+uint64_t fl_bit_reader_remaining(const fl_bit_reader *reader);
+/* Returns 0 without advancing if fewer than `count` bits remain. */
+uint32_t fl_bit_reader_read(fl_bit_reader *reader, int count);
+
+/* ---------------------------------------------------------------------------
+ * Quantization and coordinate compression.
+ * `bits` must be 1..32 and max > min; invalid input returns 0 (quantize) or
+ * `min` (dequantize).
+ * ------------------------------------------------------------------------- */
+
+uint32_t fl_net_quantize(float value, float min, float max, int bits);
+float fl_net_dequantize(uint32_t value, float min, float max, int bits);
+
+uint16_t fl_compress_coord(float value, float min, float max);
+float fl_decompress_coord(uint16_t value, float min, float max);
+
+/* ---------------------------------------------------------------------------
+ * Timer: monotonic, fractional-second resolution. Treat the struct as opaque.
+ * ------------------------------------------------------------------------- */
+
+typedef struct fl_timer {
+  int64_t start_ns;
+  int32_t duration;
+  int32_t reserved_;
+} fl_timer;
+
+typedef void (*fl_tick_callback)(void *user_data);
+
+/* Return false on NULL timer or negative duration. */
+bool fl_timer_init(fl_timer *timer, int duration_seconds);
+bool fl_timer_reset(fl_timer *timer, int new_duration_seconds);
+double fl_timer_get_elapsed(const fl_timer *timer);
+bool fl_timer_is_finished(const fl_timer *timer);
+/* Blocks until finished; calls `callback` about once per second. */
+bool fl_timer_run(fl_timer *timer, fl_tick_callback callback, void *user_data);
+
+/* ---------------------------------------------------------------------------
+ * Random: NON-CRYPTOGRAPHIC (SplitMix64). Never use for secrets.
+ * ------------------------------------------------------------------------- */
+
+typedef struct fl_rng {
+  uint64_t state;
+} fl_rng;
+
+void fl_rng_seed(fl_rng *rng, uint64_t seed);
+uint64_t fl_rng_next(fl_rng *rng);
+/* Inclusive, unbiased. Returns 0 if max < min. */
+uint64_t fl_rng_range(fl_rng *rng, uint64_t min, uint64_t max);
+
+/* Per-thread generator, auto-seeded from the monotonic clock. */
+void fl_random_seed(uint64_t seed);
+uint64_t fl_random_gen(uint64_t min, uint64_t max);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* FLUSHTOOLS_H */
