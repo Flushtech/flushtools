@@ -166,10 +166,13 @@ int main(void) {
     CHECK(fl_timer_get_elapsed(&t) < 1.0);
 
     int ticks = 0;
-    CHECK(fl_timer_init(&t, 2));
+    CHECK(fl_timer_init(&t, 0));
+    CHECK(fl_timer_run(&t, on_tick, &ticks));
+    CHECK(ticks == 0);
+    CHECK(fl_timer_init(&t, 1));
     CHECK(fl_timer_run(&t, on_tick, &ticks));
     CHECK(fl_timer_is_finished(&t));
-    CHECK(ticks >= 1 && ticks <= 2);
+    CHECK(ticks == 1);
     CHECK(!fl_timer_run(&t, NULL, NULL));
   }
 
