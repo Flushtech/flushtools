@@ -13,7 +13,7 @@ Timer :: struct {
 	_reserved: c.int,
 }
 
-// Called roughly once per second by fl_timer_run.
+// Called after each elapsed whole second by fl_timer_run.
 Tick_Callback :: proc "c" (user_data: rawptr)
 
 // Start (or restart) `timer` for `duration_seconds`.
@@ -55,9 +55,9 @@ timer_is_finished :: proc "c" (timer: ^Timer) -> bool {
 	return timer_get_elapsed(timer) >= f64(timer.duration)
 }
 
-// Block until the timer finishes, invoking `callback(user_data)` about once per
-// second. Sleeps between checks (no busy-waiting). Returns false if `timer` or
-// `callback` is NULL.
+// Block until the timer finishes, invoking `callback(user_data)` after each
+// elapsed whole second, including the final second. Sleeps between checks.
+// Returns false if `timer` or `callback` is NULL.
 @(export, link_name = "fl_timer_run")
 timer_run :: proc "c" (timer: ^Timer, callback: Tick_Callback, user_data: rawptr) -> bool {
 	context = runtime.default_context()
@@ -66,11 +66,14 @@ timer_run :: proc "c" (timer: ^Timer, callback: Tick_Callback, user_data: rawptr
 	}
 
 	last := time.tick_now()
-	for !timer_is_finished(timer) {
+	for {
 		now := time.tick_now()
 		if time.duration_seconds(time.tick_diff(last, now)) >= 1 {
 			callback(user_data)
 			last = now
+		}
+		if timer_is_finished(timer) {
+			break
 		}
 		time.sleep(5 * time.Millisecond)
 	}

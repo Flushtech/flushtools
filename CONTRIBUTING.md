@@ -14,13 +14,16 @@ Thanks for taking an interest in FlushTools.
 Install the Odin compiler. CI currently pins `dev-2026-09`. A C compiler is needed
 for the ABI test; Clang is needed for sanitizer runs.
 
-On Linux and macOS:
+On Linux:
 
 ```sh
 make check
 make asan
 make tsan
 ```
+
+macOS is not currently a validated target. The Makefile can select a `.dylib`
+output, but builds, tests, and release assets are not covered by CI yet.
 
 On Windows, from a shell with Odin on `PATH`:
 

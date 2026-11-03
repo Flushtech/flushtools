@@ -198,10 +198,14 @@ count_tick :: proc "c" (user_data: rawptr) {
 test_timer_run :: proc(t: ^testing.T) {
 	timer: fl.Timer
 	ticks: int
-	testing.expect(t, fl.timer_init(&timer, 2), "init")
+	testing.expect(t, fl.timer_init(&timer, 0), "zero-duration init")
+	testing.expect(t, fl.timer_run(&timer, count_tick, &ticks), "zero-duration run completes")
+	testing.expect(t, ticks == 0, "zero-duration run does not tick")
+
+	testing.expect(t, fl.timer_init(&timer, 1), "one-second init")
 	testing.expect(t, fl.timer_run(&timer, count_tick, &ticks), "run completes")
 	testing.expect(t, fl.timer_is_finished(&timer), "finished after run")
-	testing.expect(t, ticks >= 1 && ticks <= 2, "about one tick per second")
+	testing.expect(t, ticks == 1, "one-second run delivers its final tick")
 	testing.expect(t, !fl.timer_run(&timer, nil, nil), "nil callback rejected")
 }
 

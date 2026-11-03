@@ -41,10 +41,11 @@ library. Download one zip, include one header, link one library.
 | **Timer** | Monotonic, fractional-second timer with a per-second callback. |
 | **Random** | SplitMix64: explicit-state generator and a per-thread, auto-seeded one. Unbiased ranges. |
 
-CI and release builds currently target 64-bit Linux and Windows. macOS arm64 testing
-and release assets are deferred until the repository is public. Nothing in the library
-allocates memory, prints, or calls `exit()`; failures are reported through return
-values.
+CI and release builds currently target Linux x86_64 and Windows x86_64. macOS
+builds and release assets are not yet validated or published; treat macOS as
+unsupported until it has its own passing CI and release artifacts. Nothing in the
+library allocates memory, prints, or calls `exit()`; failures are reported through
+return values.
 
 ## Install
 
@@ -291,7 +292,7 @@ The clock is monotonic, so changing the system time does not affect it. Treat
 | `bool fl_timer_reset(fl_timer*, int duration_seconds)` | Same as init. |
 | `double fl_timer_get_elapsed(const fl_timer*)` | Seconds since start. |
 | `bool fl_timer_is_finished(const fl_timer*)` | `true` once the duration has elapsed. |
-| `bool fl_timer_run(fl_timer*, fl_tick_callback, void *user_data)` | Blocks until finished, sleeping between checks. |
+| `bool fl_timer_run(fl_timer*, fl_tick_callback, void *user_data)` | Blocks until finished, sleeping between checks; calls back after each elapsed whole second, including the final second. A zero-duration timer does not call back. |
 
 ### Random
 
@@ -315,7 +316,7 @@ Coming from the original C header? The wire formats (bit layout, quantization,
 | Names | `net_quantize`, `compass_coord`, ... | `fl_` prefix; `compass_coord` became `fl_compress_coord` |
 | Errors | `exit()` on bad input | Return `false` / `0` / `NULL`. The library never exits or prints. |
 | Timer | Wall clock, whole seconds | Monotonic clock, fractional seconds |
-| `timer_run` | Busy loop, printed to stdout | Sleeps between checks, silent, `callback(user_data)` |
+| `timer_run` | Busy loop, printed to stdout | Sleeps between checks, silent, calls `callback(user_data)` for each elapsed whole second |
 | `random_gen` | Reseeded `srand` on every call; modulo bias | Seeded once per thread; unbiased; `fl_random_seed` for repeatability |
 | Bit writer | Silently truncated | All-or-nothing, returns `bool` |
 | Bit reader | No bounds check | Bounded; `fl_bit_reader_init` takes the buffer length |
