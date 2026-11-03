@@ -33,7 +33,7 @@ library. Download one zip, include one header, link one library.
 
 | Module | What it does |
 |---|---|
-| **Arena** | Bump allocator over a buffer you own. Alignment-correct, overflow-safe. |
+| **Arena** | Bump allocator over a buffer you own, with alignment and checkpoint/rewind support. |
 | **Arrays** | Fixed-capacity, bounds-checked arrays over caller-owned storage. No allocations. |
 | **Strings** | Null-terminated strings over caller-owned buffers, with checked appends. |
 | **Bit packing** | LSB-first bit writer/reader for compact network packets. Bounds-checked. |
@@ -156,6 +156,11 @@ float *vectors = fl_arena_alloc_aligned(&arena, 64, 32);          /* 32-byte ali
 if (!numbers || !vectors) { /* out of space */ }
 
 fl_arena_reset(&arena);                     /* free everything at once */
+
+/* Or release only temporary allocations. */
+size_t mark = fl_arena_mark(&arena);
+void *scratch = fl_arena_alloc(&arena, 128);
+fl_arena_rewind(&arena, mark);              /* scratch is no longer valid */
 ```
 
 ### Timer
@@ -194,6 +199,8 @@ rather than crashing.
 | `void *fl_arena_alloc(fl_arena*, size_t size)` | 8-byte-aligned allocation. `NULL` when full. Not zeroed. |
 | `void *fl_arena_alloc_aligned(fl_arena*, size_t size, size_t alignment)` | Alignment must be a non-zero power of two. Applied to the real address. |
 | `void fl_arena_reset(fl_arena*)` | Release all allocations; the buffer is untouched. |
+| `size_t fl_arena_mark(const fl_arena*)` | Save the current offset before temporary allocations. |
+| `bool fl_arena_rewind(fl_arena*, size_t mark)` | Release allocations after an earlier mark; rejects marks beyond the current offset. |
 | `size_t fl_arena_remaining(const fl_arena*)` | Bytes left, ignoring alignment padding. |
 
 ### Fixed-capacity arrays
