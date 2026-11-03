@@ -55,9 +55,9 @@ test_array :: proc(t: ^testing.T) {
 	testing.expect(t, !fl.array_init(&array, nil, 4, size_of(int)), "nil storage rejected")
 	testing.expect(t, !fl.array_init(&array, cast([^]u8)raw_data(storage[:]), 4, 0), "zero element size rejected")
 
-	a, b, c := 10, 20, 30
+	a, b, third := 10, 20, 30
 	testing.expect(t, fl.array_push(&array, &a), "push first")
-	testing.expect(t, fl.array_push(&array, &c), "push second")
+	testing.expect(t, fl.array_push(&array, &third), "push second")
 	testing.expect(t, fl.array_insert(&array, 1, &b), "insert in middle")
 	testing.expect(t, array.count == 3, "count tracks elements")
 	testing.expect(t, (^int)(fl.array_at(&array, 0))^ == 10, "first element")
