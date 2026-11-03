@@ -87,7 +87,7 @@ int main(void) {
     char storage[12];
     fl_string s;
     CHECK(fl_string_init(&s, storage, sizeof(storage)));
-    CHECK(storage[0] == '\\0' && s.length == 0);
+    CHECK(storage[0] == '\0' && s.length == 0);
     CHECK(fl_string_append(&s, "hello"));
     CHECK(fl_string_append(&s, " world"));
     CHECK(strcmp(storage, "hello world") == 0 && s.length == 11);
@@ -95,7 +95,7 @@ int main(void) {
     CHECK(strcmp(storage, "hello world") == 0 && s.length == 11);
     CHECK(!fl_string_append(&s, NULL));
     fl_string_clear(&s);
-    CHECK(storage[0] == '\\0' && s.length == 0);
+    CHECK(storage[0] == '\0' && s.length == 0);
     CHECK(!fl_string_init(NULL, storage, sizeof(storage)));
     CHECK(!fl_string_init(&s, NULL, sizeof(storage)));
     CHECK(!fl_string_init(&s, storage, 0));
