@@ -2,7 +2,7 @@
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Language: Odin](https://img.shields.io/badge/written%20in-Odin-1f6feb.svg)
-![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg)
+![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20windows-lightgrey.svg)
 
 Small systems utilities written in [Odin](https://odin-lang.org) and shipped as a
 shared library with a plain **C ABI**: an arena allocator, bit packing, float
@@ -45,15 +45,20 @@ values.
 
 ## Install
 
-Every [release](../../releases) contains, for each CI-supported platform, a zip with
-**only** the header and that platform's library, plus the header on its own and checksums:
+Every [release](../../releases) contains three download types:
 
 | Asset | Contents |
 |---|---|
-| `flushtools-<tag>-linux-x86_64.zip` | `flushtools.h`, `libflushtools.so` |
-| `flushtools-<tag>-windows-x86_64.zip` | `flushtools.h`, `flushtools.dll`, `flushtools.lib` (import library, required to link the DLL with MSVC) |
-| `flushtools.h` | the header alone |
-| `SHA256SUMS.txt` | SHA-256 checksums of all of the above |
+| `flushtools-<tag>-linux-x86_64.zip` | Full Linux bundle: `flushtools.h` + `libflushtools.so` |
+| `flushtools-<tag>-windows-x86_64.zip` | Full Windows bundle: `flushtools.h` + `flushtools.dll` + `flushtools.lib` |
+| `flushtools-<tag>-linux-x86_64-library-only.zip` | Linux shared library only: `libflushtools.so` |
+| `flushtools-<tag>-windows-x86_64-library-only.zip` | Windows library files: `flushtools.dll` + `flushtools.lib` (the import library needed to link with MSVC) |
+| `flushtools-<tag>-header-only.zip` | Public C header: `flushtools.h` |
+| `SHA256SUMS.txt` | SHA-256 checksums for every ZIP above |
+
+The full bundle is the easiest starting point. Use the header-only archive when you
+already build or distribute the library yourself, and the library-only archive when
+you manage the header separately.
 
 Unzip next to your source and you are done.
 
@@ -309,8 +314,15 @@ Versioning and the changelog are automated with
 | `feat!: ...` or a `BREAKING CHANGE:` footer | minor (major once at 1.0.0 or above) |
 
 Merging to `master` opens or updates a release PR. Merging that PR tags the release,
-runs the full test matrix including the sanitizers, and attaches the per-platform
-zips, the standalone header and `SHA256SUMS.txt` to the GitHub release. The version
+runs the full test matrix including the sanitizers, and attaches the full bundle,
+library-only and header-only ZIPs plus `SHA256SUMS.txt` to the GitHub release.
+
+To limit storage in this private repository, CI uploads build archives only when the
+release workflow needs to pass them between jobs. Those temporary Actions artifacts
+expire after one day; pull-request and manual CI runs do not upload them. Published
+release assets remain attached to their version so downloads stay reproducible. The
+archives contain only the distributable files—no build tree, test binaries or debug
+symbols. The version
 in `src/flushtools.odin` and `include/flushtools.h` is bumped automatically through
 `x-release-please-version` markers; do not edit it by hand.
 
