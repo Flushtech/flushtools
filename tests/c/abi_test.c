@@ -74,6 +74,7 @@ int main(void) {
     CHECK(*(int *)fl_array_at(&a, 1) == 30);
     CHECK(!fl_array_remove(&a, 2));
     CHECK(fl_array_push(&a, &middle));
+    CHECK(fl_array_push(&a, &first));
     CHECK(!fl_array_push(&a, &first));
     fl_array_clear(&a);
     CHECK(a.count == 0 && fl_array_at(&a, 0) == NULL);
