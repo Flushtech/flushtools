@@ -21,6 +21,7 @@ library. Download one zip, include one header, link one library.
 - [Features](#features)
 - [Install](#install)
 - [Quick start](#quick-start)
+- [C example](#c-example)
 - [API reference](#api-reference)
 - [Behaviour notes](#behaviour-notes)
 - [Building from source](#building-from-source)
@@ -103,6 +104,23 @@ cc main.c -I. -L. -lflushtools -Wl,-rpath,@loader_path -o main
 # Windows (MSVC): keep flushtools.dll next to the resulting .exe
 cl main.c flushtools.lib
 ```
+
+## C example
+
+Want a complete application instead of isolated snippets? See the
+[runnable C getting-started project](examples/c/README.md). It links against the
+same shared library and public header shipped in the release bundles, and shows
+arena allocation, bit packing, quantization, random numbers, and timing.
+
+From a source checkout, build FlushTools and run it with:
+
+```sh
+make
+make -C examples/c run
+```
+
+The example also documents how to compile directly against a downloaded release
+bundle on Linux or Windows.
 
 ### C++
 
