@@ -12,6 +12,7 @@
 /* Struct layouts must match the Odin side (64-bit targets). */
 #define LAYOUT_CHECK(name, cond) typedef char layout_check_##name[(cond) ? 1 : -1]
 LAYOUT_CHECK(arena, sizeof(fl_arena) == 24);
+LAYOUT_CHECK(array, sizeof(fl_array) == 32);
 LAYOUT_CHECK(timer, sizeof(fl_timer) == 16);
 LAYOUT_CHECK(writer, sizeof(fl_bit_writer) == 24);
 LAYOUT_CHECK(reader, sizeof(fl_bit_reader) == 24);
@@ -51,6 +52,32 @@ int main(void) {
     void *p3 = fl_arena_alloc_aligned(&a, 4, 32);
     CHECK(p3 != NULL && ((uintptr_t)p3 % 32) == 0);
     CHECK(fl_arena_alloc_aligned(&a, 4, 3) == NULL); /* not a power of two */
+  }
+
+  /* fixed-capacity array */
+  {
+    int storage[4] = {0};
+    fl_array a;
+    int first = 10, middle = 20, last = 30;
+    CHECK(fl_array_init(&a, (uint8_t *)storage, 4, sizeof(int)));
+    CHECK(!fl_array_init(&a, NULL, 4, sizeof(int)));
+    CHECK(!fl_array_init(&a, (uint8_t *)storage, 4, 0));
+    CHECK(fl_array_push(&a, &first));
+    CHECK(fl_array_push(&a, &last));
+    CHECK(fl_array_insert(&a, 1, &middle));
+    CHECK(a.count == 3);
+    CHECK(*(int *)fl_array_at(&a, 0) == 10);
+    CHECK(*(int *)fl_array_at(&a, 1) == 20);
+    CHECK(*(int *)fl_array_at(&a, 2) == 30);
+    CHECK(fl_array_at(&a, 3) == NULL);
+    CHECK(fl_array_remove(&a, 1));
+    CHECK(*(int *)fl_array_at(&a, 1) == 30);
+    CHECK(!fl_array_remove(&a, 2));
+    CHECK(fl_array_push(&a, &middle));
+    CHECK(!fl_array_push(&a, &first));
+    fl_array_clear(&a);
+    CHECK(a.count == 0 && fl_array_at(&a, 0) == NULL);
+    CHECK(fl_array_init(&a, NULL, 0, sizeof(int)));
   }
 
   /* bit packing, including the README example */
