@@ -54,9 +54,10 @@ jobs:
           path: dist
 
       # Assets:
-      #   flushtools-<tag>-<platform>.zip   header + that platform's library only
-      #   flushtools.h                      the header on its own
-      #   SHA256SUMS.txt
+      #   flushtools-<tag>-<platform>.zip                 full bundle
+      #   flushtools-<tag>-<platform>-library-only.zip    library + Windows import lib
+      #   flushtools-<tag>-header-only.zip                public header only
+      #   SHA256SUMS.txt                                  checksums for every zip
       - name: Upload release assets
         working-directory: dist
         env:
@@ -66,10 +67,10 @@ jobs:
           HEADER: ${{ github.workspace }}/include/flushtools.h
         run: |
           set -euo pipefail
+          zip -j flushtools-header-only.zip "$HEADER"
           for f in flushtools-*.zip; do
             mv "$f" "${f/flushtools-/flushtools-${TAG}-}"
           done
-          cp "$HEADER" flushtools.h
-          sha256sum flushtools-*.zip flushtools.h > SHA256SUMS.txt
-          ls -la
-          gh release upload "$TAG" flushtools-*.zip flushtools.h SHA256SUMS.txt --clobber
+          sha256sum flushtools-*.zip > SHA256SUMS.txt
+          ls -lh
+          gh release upload "$TAG" flushtools-*.zip SHA256SUMS.txt --clobber
