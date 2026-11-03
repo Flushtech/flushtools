@@ -59,6 +59,7 @@ Every [release](../../releases) contains three download types:
 The full bundle is the easiest starting point. Use the header-only archive when you
 already build or distribute the library yourself, and the library-only archive when
 you manage the header separately.
+
 Unzip next to your source and you are done.
 
 ## Quick start
