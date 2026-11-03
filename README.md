@@ -38,19 +38,19 @@ library. Download one zip, include one header, link one library.
 | **Timer** | Monotonic, fractional-second timer with a per-second callback. |
 | **Random** | SplitMix64: explicit-state generator and a per-thread, auto-seeded one. Unbiased ranges. |
 
-Supported targets: 64-bit Linux, macOS (arm64) and Windows. Nothing in the library
+CI and release builds currently target 64-bit Linux and Windows. macOS arm64 testing
+and release assets are deferred until the repository is public. Nothing in the library
 allocates memory, prints, or calls `exit()`; failures are reported through return
 values.
 
 ## Install
 
-Every [release](../../releases) contains, for each platform, a zip with **only**
-the header and that platform's library, plus the header on its own and checksums:
+Every [release](../../releases) contains, for each CI-supported platform, a zip with
+**only** the header and that platform's library, plus the header on its own and checksums:
 
 | Asset | Contents |
 |---|---|
 | `flushtools-<tag>-linux-x86_64.zip` | `flushtools.h`, `libflushtools.so` |
-| `flushtools-<tag>-macos-arm64.zip` | `flushtools.h`, `libflushtools.dylib` |
 | `flushtools-<tag>-windows-x86_64.zip` | `flushtools.h`, `flushtools.dll`, `flushtools.lib` (import library, required to link the DLL with MSVC) |
 | `flushtools.h` | the header alone |
 | `SHA256SUMS.txt` | SHA-256 checksums of all of the above |
@@ -281,7 +281,7 @@ release can be published:
 
 | Job | What it checks |
 |---|---|
-| `linux`, `macos`, `windows` | Odin unit tests, shared-library build, then a C program built from the public header and linked against the real `.so` / `.dylib` / `.dll`. This catches header and ABI drift and struct layout mismatches. |
+| `linux`, `windows` | Odin unit tests, shared-library build, then a C program built from the public header and linked against the real `.so` / `.dll`. This catches header and ABI drift and struct layout mismatches. |
 | `sanitizers (asan)` | AddressSanitizer, LeakSanitizer and UBSan. The Odin library is built with `-sanitize:address`, the C tests with clang's matching flags, and the Odin tests run under ASan with Odin's tracking allocator. |
 | `sanitizers (tsan)` | ThreadSanitizer over an 8-thread C test (per-thread RNG and timers). |
 
