@@ -79,6 +79,22 @@ jobs:
           if errorlevel 1 exit /b 1
           build\abi_test.exe
 
+      - name: Build and run C example (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude examples/c/main.c \
+            -Lbuild -lflushtools -Wl,-rpath,'$ORIGIN' -o build/c_example
+          LD_LIBRARY_PATH=build ./build/c_example
+
+      - name: Build and run C example (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          cl /nologo /W4 /Iinclude examples\c\main.c build\flushtools.lib /Fe:build\c_example.exe /Fo:build\
+          if errorlevel 1 exit /b 1
+          set PATH=%CD%\build;%PATH%
+          build\c_example.exe
+
       # Full bundle: header + shared library (and Windows import library).
       # Library-only: shared library (and Windows import library), no header.
       - name: Package (Linux archives)
