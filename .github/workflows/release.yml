@@ -1,14 +1,15 @@
 name: Release
 
 # On every push to the default branch:
-#   1. release-please opens/updates a release PR (or, when that PR was just
-#      merged, creates the tag + GitHub release).
-#   2. The full CI matrix runs against the pushed commit.
-#   3. If a release was created and CI passed, the built libraries are
-#      attached to that release.
+#   1. Release Please opens/updates a release PR, or creates a draft release
+#      when a release PR is merged.
+#   2. The full CI matrix builds and tests the release commit.
+#   3. If a release was created and CI passed, this job attaches and verifies
+#      every package before publishing the release.
 #
-# Build + upload live in this one workflow on purpose: releases created with
-# the default GITHUB_TOKEN do not trigger other workflows (e.g. on: release).
+# Keep build + upload in this workflow: the release is created with a PAT, but
+# the upload job uses GITHUB_TOKEN and does not depend on a separate release
+# event workflow.
 on:
   push:
     branches: [master]
@@ -41,7 +42,7 @@ jobs:
       contents: read
 
   publish:
-    name: Attach binaries to release
+    name: Attach binaries and publish release
     needs: [release-please, ci]
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
@@ -59,7 +60,7 @@ jobs:
       #   flushtools-<tag>-<platform>-library-only.zip    library + Windows import lib
       #   flushtools-<tag>-header-only.zip                public header only
       #   SHA256SUMS.txt                                  checksums for every zip
-      - name: Upload release assets
+      - name: Upload and publish release
         working-directory: dist
         env:
           GH_TOKEN: ${{ github.token }}
@@ -68,10 +69,42 @@ jobs:
           HEADER: ${{ github.workspace }}/include/flushtools.h
         run: |
           set -euo pipefail
+          shopt -s nullglob
+
+          # Never attempt to mutate a published (and potentially immutable)
+          # release. Release Please must create this release as a draft.
+          is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+          if [[ "$is_draft" != "true" ]]; then
+            echo "::error::Release $TAG is not a draft; refusing to upload assets."
+            exit 1
+          fi
+
           zip -j flushtools-header-only.zip "$HEADER"
-          for f in flushtools-*.zip; do
-            mv "$f" "${f/flushtools-/flushtools-${TAG}-}"
+          archives=(flushtools-*.zip)
+          if [[ "${#archives[@]}" -ne 5 ]]; then
+            echo "::error::Expected five ZIP packages, found ${#archives[@]}."
+            printf '%s\\n' "${archives[@]}"
+            exit 1
+          fi
+
+          for archive in "${archives[@]}"; do
+            unzip -t "$archive"
+            mv "$archive" "${archive/flushtools-/flushtools-${TAG}-}"
           done
-          sha256sum flushtools-*.zip > SHA256SUMS.txt
-          ls -lh
-          gh release upload "$TAG" flushtools-*.zip SHA256SUMS.txt --clobber
+
+          archives=(flushtools-*.zip)
+          sha256sum "${archives[@]}" > SHA256SUMS.txt
+          ls -lh "${archives[@]}" SHA256SUMS.txt
+
+          # Upload everything while the release is still editable.
+          gh release upload "$TAG" "${archives[@]}" SHA256SUMS.txt
+
+          # Confirm all six expected assets are attached before making the
+          # release immutable by publishing it.
+          asset_count="$(gh release view "$TAG" --json assets --jq '.assets | length')"
+          if [[ "$asset_count" -ne 6 ]]; then
+            echo "::error::Expected six release assets, found $asset_count."
+            exit 1
+          fi
+
+          gh release edit "$TAG" --draft=false
