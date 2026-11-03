@@ -13,7 +13,7 @@
 package flushtools
 
 // Updated automatically by release-please (see release-please-config.json).
-VERSION :: "0.0.0" // x-release-please-version
+VERSION :: "1.0.0" // x-release-please-version
 
 @(export, link_name = "fl_version")
 version :: proc "c" () -> cstring {
