@@ -276,7 +276,7 @@ the real library, so any drift between header and implementation fails CI.
 
 ## Testing
 
-Every pull request runs the following, and every push to `main` repeats it before a
+Every pull request runs the following, and every push to `master` repeats it before a
 release can be published:
 
 | Job | What it checks |
@@ -308,7 +308,7 @@ Versioning and the changelog are automated with
 | `feat: ...` | minor |
 | `feat!: ...` or a `BREAKING CHANGE:` footer | minor (major once at 1.0.0 or above) |
 
-Merging to `main` opens or updates a release PR. Merging that PR tags the release,
+Merging to `master` opens or updates a release PR. Merging that PR tags the release,
 runs the full test matrix including the sanitizers, and attaches the per-platform
 zips, the standalone header and `SHA256SUMS.txt` to the GitHub release. The version
 in `src/flushtools.odin` and `include/flushtools.h` is bumped automatically through
