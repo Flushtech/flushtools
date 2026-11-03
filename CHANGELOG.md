@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Flushtech/flushtools/compare/v1.0.0...v1.0.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* publish release assets before finalizing releases ([#11](https://github.com/Flushtech/flushtools/issues/11)) ([85c3953](https://github.com/Flushtech/flushtools/commit/85c3953c10201798cecf41de0af0daa6a29ba378))
+
 ## 1.0.0 (2026-11-03)
 
 
