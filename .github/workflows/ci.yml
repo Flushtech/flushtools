@@ -26,10 +26,12 @@ jobs:
             platform: linux-x86_64
             libfile: libflushtools.so
             archive: flushtools-linux-x86_64.zip
+            library_archive: flushtools-linux-x86_64-library-only.zip
           - os: windows-latest
             platform: windows-x86_64
             libfile: flushtools.dll
             archive: flushtools-windows-x86_64.zip
+            library_archive: flushtools-windows-x86_64-library-only.zip
     defaults:
       run:
         shell: bash
@@ -77,35 +79,38 @@ jobs:
           if errorlevel 1 exit /b 1
           build\abi_test.exe
 
-      # Each archive contains ONLY the header and that platform's library
-      # (Windows also needs the import library to link against the DLL).
-      - name: Package (Linux/macOS zip)
+      # Full bundle: header + shared library (and Windows import library).
+      # Library-only: shared library (and Windows import library), no header.
+      - name: Package (Linux archives)
         if: runner.os != 'Windows'
-        run: zip -j "${{ matrix.archive }}" include/flushtools.h "build/${{ matrix.libfile }}"
+        run: |
+          zip -j "${{ matrix.archive }}" include/flushtools.h "build/${{ matrix.libfile }}"
+          zip -j "${{ matrix.library_archive }}" "build/${{ matrix.libfile }}"
 
-      - name: Package (Windows zip)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Compress-Archive -Path include\flushtools.h, build\flushtools.dll, build\flushtools.lib -DestinationPath "${{ matrix.archive }}"
-
-      - name: Show archive contents (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: unzip -l "${{ matrix.archive }}"
-
-      - name: Show archive contents (Windows)
+      - name: Package (Windows archives)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path "${{ matrix.archive }}"))
-          $zip.Entries | ForEach-Object { $_.FullName }
-          $zip.Dispose()
+          Compress-Archive -Path include\flushtools.h, build\flushtools.dll, build\flushtools.lib -DestinationPath "${{ matrix.archive }}"
+          Compress-Archive -Path build\flushtools.dll, build\flushtools.lib -DestinationPath "${{ matrix.library_archive }}"
 
+      - name: Show archive contents
+        shell: bash
+        run: |
+          unzip -l "${{ matrix.archive }}"
+          unzip -l "${{ matrix.library_archive }}"
+
+      # Artifacts are only a handoff to the release job. Skip PR/manual runs
+      # and expire the handoff quickly; published release assets are separate.
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
         with:
           name: dist-${{ matrix.platform }}
-          path: ${{ matrix.archive }}
+          path: |
+            ${{ matrix.archive }}
+            ${{ matrix.library_archive }}
           if-no-files-found: error
+          retention-days: 1
 
   sanitizers:
     name: sanitizers (${{ matrix.mode }})
