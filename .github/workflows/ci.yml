@@ -1,7 +1,7 @@
 name: CI
 
-# Runs on pull requests, and is reused by release.yml (which runs it on every
-# push to main and publishes its artifacts when a release is cut).
+# Runs on pull requests, and is reused by release.yml on pushes to master.
+# Only release runs upload short-lived artifacts for the publish job.
 on:
   pull_request:
   workflow_dispatch:
@@ -94,11 +94,28 @@ jobs:
           Compress-Archive -Path include\flushtools.h, build\flushtools.dll, build\flushtools.lib -DestinationPath "${{ matrix.archive }}"
           Compress-Archive -Path build\flushtools.dll, build\flushtools.lib -DestinationPath "${{ matrix.library_archive }}"
 
-      - name: Show archive contents
-        shell: bash
+      - name: Verify and list Linux archives
+        if: runner.os != 'Windows'
         run: |
+          unzip -t "${{ matrix.archive }}"
+          unzip -t "${{ matrix.library_archive }}"
           unzip -l "${{ matrix.archive }}"
           unzip -l "${{ matrix.library_archive }}"
+
+      - name: Verify and list Windows archives
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          foreach ($archivePath in @("${{ matrix.archive }}", "${{ matrix.library_archive }}")) {
+            $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $archivePath))
+            try {
+              Write-Host $archivePath
+              $zip.Entries | ForEach-Object { Write-Host $_.FullName }
+            } finally {
+              $zip.Dispose()
+            }
+          }
 
       # Artifacts are only a handoff to the release job. Skip PR/manual runs
       # and expire the handoff quickly; published release assets are separate.
