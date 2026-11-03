@@ -1,6 +1,6 @@
 name: Release
 
-# On every push to main:
+# On every push to the default branch:
 #   1. release-please opens/updates a release PR (or, when that PR was just
 #      merged, creates the tag + GitHub release).
 #   2. The full CI matrix runs against the pushed commit.
@@ -11,7 +11,7 @@ name: Release
 # the default GITHUB_TOKEN do not trigger other workflows (e.g. on: release).
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 permissions:
   contents: write

@@ -26,10 +26,6 @@ jobs:
             platform: linux-x86_64
             libfile: libflushtools.so
             archive: flushtools-linux-x86_64.zip
-          - os: macos-latest
-            platform: macos-arm64
-            libfile: libflushtools.dylib
-            archive: flushtools-macos-arm64.zip
           - os: windows-latest
             platform: windows-x86_64
             libfile: flushtools.dll
