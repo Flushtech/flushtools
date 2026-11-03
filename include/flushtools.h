@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /* Updated automatically by release-please. */
-#define FLUSHTOOLS_VERSION "0.0.0" /* x-release-please-version */
+#define FLUSHTOOLS_VERSION "1.0.0" /* x-release-please-version */
 
 /* Library version string; matches FLUSHTOOLS_VERSION if header and binary agree. */
 const char *fl_version(void);
