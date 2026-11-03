@@ -23,6 +23,7 @@ version :: proc "c" () -> cstring {
 // Guard against accidental ABI drift on the supported 64-bit targets.
 when size_of(rawptr) == 8 {
 	#assert(size_of(Arena) == 24)
+	#assert(size_of(Array) == 32)
 	#assert(size_of(Timer) == 16)
 	#assert(size_of(Bit_Writer) == 24)
 	#assert(size_of(Bit_Reader) == 24)

@@ -44,6 +44,33 @@ void fl_arena_reset(fl_arena *arena);
 size_t fl_arena_remaining(const fl_arena *arena);
 
 /* ---------------------------------------------------------------------------
+ * Fixed-capacity array: contiguous caller-owned storage, no allocations.
+ * The backing buffer must be aligned for the element type. Elements passed to
+ * push/insert must not alias the backing buffer.
+ * ------------------------------------------------------------------------- */
+
+typedef struct fl_array {
+  uint8_t *data;
+  size_t count;
+  size_t capacity;
+  size_t element_size;
+} fl_array;
+
+/* A zero-capacity array may use a NULL data pointer. */
+bool fl_array_init(fl_array *array, uint8_t *data, size_t capacity,
+                   size_t element_size);
+/* Copy one element into the next slot. False if full or arguments are invalid. */
+bool fl_array_push(fl_array *array, const void *element);
+/* Insert before index; index == count appends. Preserves element order. */
+bool fl_array_insert(fl_array *array, size_t index, const void *element);
+/* Remove at index and shift later elements left. */
+bool fl_array_remove(fl_array *array, size_t index);
+/* Pointer to element at index, or NULL when out of bounds. */
+void *fl_array_at(fl_array *array, size_t index);
+/* Set count to zero; does not clear the backing memory. */
+void fl_array_clear(fl_array *array);
+
+/* ---------------------------------------------------------------------------
  * Bit packing (LSB-first). Counts are 0..32 bits per call.
  * ------------------------------------------------------------------------- */
 
