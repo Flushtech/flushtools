@@ -13,6 +13,7 @@
 #define LAYOUT_CHECK(name, cond) typedef char layout_check_##name[(cond) ? 1 : -1]
 LAYOUT_CHECK(arena, sizeof(fl_arena) == 24);
 LAYOUT_CHECK(array, sizeof(fl_array) == 32);
+LAYOUT_CHECK(string, sizeof(fl_string) == 24);
 LAYOUT_CHECK(timer, sizeof(fl_timer) == 16);
 LAYOUT_CHECK(writer, sizeof(fl_bit_writer) == 24);
 LAYOUT_CHECK(reader, sizeof(fl_bit_reader) == 24);
@@ -79,6 +80,25 @@ int main(void) {
     fl_array_clear(&a);
     CHECK(a.count == 0 && fl_array_at(&a, 0) == NULL);
     CHECK(fl_array_init(&a, NULL, 0, sizeof(int)));
+  }
+
+  /* fixed-capacity string */
+  {
+    char storage[12];
+    fl_string s;
+    CHECK(fl_string_init(&s, storage, sizeof(storage)));
+    CHECK(storage[0] == '\0' && s.length == 0);
+    CHECK(fl_string_append(&s, "hello"));
+    CHECK(fl_string_append(&s, " world"));
+    CHECK(strcmp(storage, "hello world") == 0 && s.length == 11);
+    CHECK(!fl_string_append(&s, "!"));
+    CHECK(strcmp(storage, "hello world") == 0 && s.length == 11);
+    CHECK(!fl_string_append(&s, NULL));
+    fl_string_clear(&s);
+    CHECK(storage[0] == '\0' && s.length == 0);
+    CHECK(!fl_string_init(NULL, storage, sizeof(storage)));
+    CHECK(!fl_string_init(&s, NULL, sizeof(storage)));
+    CHECK(!fl_string_init(&s, storage, 0));
   }
 
   /* bit packing, including the README example */

@@ -71,6 +71,23 @@ void *fl_array_at(fl_array *array, size_t index);
 void fl_array_clear(fl_array *array);
 
 /* ---------------------------------------------------------------------------
+ * Fixed-capacity string: caller-owned, null-terminated buffer.
+ * Capacity includes the trailing NUL byte.
+ * ------------------------------------------------------------------------- */
+
+typedef struct fl_string {
+  char *data;
+  size_t length;
+  size_t capacity;
+} fl_string;
+
+bool fl_string_init(fl_string *string, char *buffer, size_t capacity);
+/* Appends a null-terminated string. False on invalid input or insufficient space. */
+bool fl_string_append(fl_string *string, const char *value);
+/* Clears the string but leaves the buffer allocated to the caller. */
+void fl_string_clear(fl_string *string);
+
+/* ---------------------------------------------------------------------------
  * Bit packing (LSB-first). Counts are 0..32 bits per call.
  * ------------------------------------------------------------------------- */
 

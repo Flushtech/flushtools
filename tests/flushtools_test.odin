@@ -80,6 +80,26 @@ test_array :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_string :: proc(t: ^testing.T) {
+	storage: [12]u8
+	s: fl.String
+	testing.expect(t, fl.string_init(&s, raw_data(storage[:]), c.size_t(len(storage))), "init")
+	testing.expect(t, s.length == 0 && storage[0] == 0, "init creates empty string")
+	testing.expect(t, fl.string_append(&s, cstring("hello")), "append first value")
+	testing.expect(t, fl.string_append(&s, cstring(" world")), "append second value")
+	testing.expect(t, s.length == 11 && string(s.data[:s.length]) == "hello world", "append maintains contents and length")
+	testing.expect(t, !fl.string_append(&s, cstring("!")), "insufficient capacity rejected")
+	testing.expect(t, s.length == 11 && storage[11] == 0, "failed append leaves string unchanged")
+	testing.expect(t, !fl.string_append(&s, nil), "nil source rejected")
+	fl.string_clear(&s)
+	testing.expect(t, s.length == 0 && storage[0] == 0, "clear restores empty string")
+
+	testing.expect(t, !fl.string_init(nil, raw_data(storage[:]), c.size_t(len(storage))), "nil string rejected")
+	testing.expect(t, !fl.string_init(&s, nil, 12), "nil buffer rejected")
+	testing.expect(t, !fl.string_init(&s, raw_data(storage[:]), 0), "zero capacity rejected")
+}
+
+@(test)
 test_bits_roundtrip :: proc(t: ^testing.T) {
 	buf: [16]u8
 	w: fl.Bit_Writer

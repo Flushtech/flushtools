@@ -5,7 +5,7 @@
 ![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20windows-lightgrey.svg)
 
 Small systems utilities written in [Odin](https://odin-lang.org) and shipped as a
-shared library with a plain **C ABI**: an arena allocator, fixed-capacity arrays, bit packing, float quantization,
+shared library with a plain **C ABI**: an arena allocator, fixed-capacity arrays and strings, bit packing, float quantization,
 a monotonic timer, and a fast non-cryptographic RNG.
 
 Use it from C, C++, Rust, Zig, Python, Odin, or anything else that can call a C
@@ -35,6 +35,7 @@ library. Download one zip, include one header, link one library.
 |---|---|
 | **Arena** | Bump allocator over a buffer you own. Alignment-correct, overflow-safe. |
 | **Arrays** | Fixed-capacity, bounds-checked arrays over caller-owned storage. No allocations. |
+| **Strings** | Null-terminated strings over caller-owned buffers, with checked appends. |
 | **Bit packing** | LSB-first bit writer/reader for compact network packets. Bounds-checked. |
 | **Quantization** | Float to N-bit integer (1 to 32 bits) and back. 16-bit coordinate compression. |
 | **Timer** | Monotonic, fractional-second timer with a per-second callback. |
@@ -226,6 +227,28 @@ fl_array_clear(&entities); /* storage remains yours */
 | `bool fl_array_remove(fl_array*, size_t index)` | Remove and shift later elements left. |
 | `void *fl_array_at(fl_array*, size_t index)` | Checked element pointer or `NULL`. |
 | `void fl_array_clear(fl_array*)` | Set count to zero without clearing storage. |
+
+### Fixed-capacity strings
+
+`fl_string` stores a null-terminated string in a caller-owned buffer. Capacity
+includes the trailing NUL byte. Appends are all-or-nothing: insufficient space
+returns `false` and leaves the original string unchanged.
+
+```c
+char storage[64];
+fl_string name;
+if (fl_string_init(&name, storage, sizeof storage)) {
+    fl_string_append(&name, "Player ");
+    fl_string_append(&name, "One");
+    /* name.data is "Player One" */
+}
+```
+
+| Function | Description |
+|---|---|
+| `bool fl_string_init(fl_string*, char*, size_t capacity)` | Initialise an empty string; capacity includes the NUL terminator. |
+| `bool fl_string_append(fl_string*, const char*)` | Append a null-terminated string; fails without modifying the destination if it will not fit. |
+| `void fl_string_clear(fl_string*)` | Reset to an empty string without modifying the rest of the buffer. |
 
 ### Bit packing (LSB-first, 0 to 32 bits per call)
 
