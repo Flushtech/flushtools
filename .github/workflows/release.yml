@@ -31,6 +31,7 @@ jobs:
       - id: rp
         uses: googleapis/release-please-action@v4
         with:
+          token: ${{ secrets['releae-please-PAT'] }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
