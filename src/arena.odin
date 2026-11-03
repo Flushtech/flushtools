@@ -76,3 +76,22 @@ arena_remaining :: proc "c" (arena: ^Arena) -> c.size_t {
 	}
 	return arena.capacity - arena.offset
 }
+
+// Save the current allocation offset for a later rewind.
+@(export, link_name = "fl_arena_mark")
+arena_mark :: proc "c" (arena: ^Arena) -> c.size_t {
+	if arena == nil || arena.offset > arena.capacity {
+		return 0
+	}
+	return arena.offset
+}
+
+// Rewind to an earlier mark. Marks beyond the current offset are rejected.
+@(export, link_name = "fl_arena_rewind")
+arena_rewind :: proc "c" (arena: ^Arena, mark: c.size_t) -> bool {
+	if arena == nil || arena.offset > arena.capacity || mark > arena.offset {
+		return false
+	}
+	arena.offset = mark
+	return true
+}

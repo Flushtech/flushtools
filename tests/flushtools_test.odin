@@ -28,6 +28,17 @@ test_arena :: proc(t: ^testing.T) {
 	fl.arena_reset(&a)
 	testing.expect(t, fl.arena_remaining(&a) == 64, "reset reclaims everything")
 
+	mark := fl.arena_mark(&a)
+	_ = fl.arena_alloc(&a, 8)
+	nested_mark := fl.arena_mark(&a)
+	_ = fl.arena_alloc(&a, 4)
+	testing.expect(t, fl.arena_rewind(&a, nested_mark), "rewind nested allocations")
+	testing.expect(t, a.offset == nested_mark, "nested rewind restores offset")
+	testing.expect(t, fl.arena_rewind(&a, mark), "rewind outer allocations")
+	testing.expect(t, a.offset == mark, "outer rewind restores offset")
+	testing.expect(t, !fl.arena_rewind(&a, mark + 1), "future mark rejected")
+	testing.expect(t, a.offset == mark, "failed rewind leaves offset unchanged")
+
 	p3 := fl.arena_alloc_aligned(&a, 4, 32)
 	testing.expect(t, p3 != nil && uintptr(p3) % 32 == 0, "32-byte alignment honoured")
 	testing.expect(t, fl.arena_alloc_aligned(&a, 4, 3) == nil, "non power-of-two alignment rejected")

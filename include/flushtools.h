@@ -41,6 +41,10 @@ void *fl_arena_alloc(fl_arena *arena, size_t size);
 /* `alignment` must be a non-zero power of two. */
 void *fl_arena_alloc_aligned(fl_arena *arena, size_t size, size_t alignment);
 void fl_arena_reset(fl_arena *arena);
+/* Save the current offset; pass it to fl_arena_rewind for temporary allocations. */
+size_t fl_arena_mark(const fl_arena *arena);
+/* Rewind to an earlier mark. Returns false for a mark beyond the current offset. */
+bool fl_arena_rewind(fl_arena *arena, size_t mark);
 size_t fl_arena_remaining(const fl_arena *arena);
 
 /* ---------------------------------------------------------------------------

@@ -50,6 +50,16 @@ int main(void) {
     CHECK(fl_arena_alloc(&a, 1) == NULL);
     fl_arena_reset(&a);
     CHECK(fl_arena_remaining(&a) == 64);
+    size_t mark = fl_arena_mark(&a);
+    CHECK(fl_arena_alloc(&a, 8) != NULL);
+    size_t nested_mark = fl_arena_mark(&a);
+    CHECK(fl_arena_alloc(&a, 4) != NULL);
+    CHECK(fl_arena_rewind(&a, nested_mark));
+    CHECK(a.offset == nested_mark);
+    CHECK(fl_arena_rewind(&a, mark));
+    CHECK(a.offset == mark);
+    CHECK(!fl_arena_rewind(&a, mark + 1));
+    CHECK(a.offset == mark);
     void *p3 = fl_arena_alloc_aligned(&a, 4, 32);
     CHECK(p3 != NULL && ((uintptr_t)p3 % 32) == 0);
     CHECK(fl_arena_alloc_aligned(&a, 4, 3) == NULL); /* not a power of two */
