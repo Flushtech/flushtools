@@ -51,7 +51,7 @@ test_arena_unaligned_buffer :: proc(t: ^testing.T) {
 test_array :: proc(t: ^testing.T) {
 	storage: [4]int
 	array: fl.Array
-	testing.expect(t, fl.array_init(&array, cast([^]u8)raw_data(storage[:]), 4, size_of(int)), "init")
+	testing.expect(t, fl.array_init(&array, cast([^]u8)raw_data(storage[:]), 4, c.size_t(size_of(int))), "init")
 	testing.expect(t, !fl.array_init(&array, nil, 4, size_of(int)), "nil storage rejected")
 	testing.expect(t, !fl.array_init(&array, cast([^]u8)raw_data(storage[:]), 4, 0), "zero element size rejected")
 
@@ -60,7 +60,7 @@ test_array :: proc(t: ^testing.T) {
 	testing.expect(t, fl.array_push(&array, &c), "push second")
 	testing.expect(t, fl.array_insert(&array, 1, &b), "insert in middle")
 	testing.expect(t, array.count == 3, "count tracks elements")
-	testing.expect(t, ( ^int)(fl.array_at(&array, 0))^ == 10, "first element")
+	testing.expect(t, (^int)(fl.array_at(&array, 0))^ == 10, "first element")
 	testing.expect(t, (^int)(fl.array_at(&array, 1))^ == 20, "inserted element")
 	testing.expect(t, (^int)(fl.array_at(&array, 2))^ == 30, "last element")
 	testing.expect(t, fl.array_at(&array, 3) == nil, "out-of-range access rejected")
@@ -75,7 +75,7 @@ test_array :: proc(t: ^testing.T) {
 	testing.expect(t, fl.array_at(&array, 0) == nil, "empty array has no elements")
 
 	empty: fl.Array
-	testing.expect(t, fl.array_init(&empty, nil, 0, size_of(int)), "zero-capacity array is valid")
+	testing.expect(t, fl.array_init(&empty, nil, 0, c.size_t(size_of(int))), "zero-capacity array is valid")
 }
 
 @(test)
