@@ -1,4 +1,5 @@
-# FlushTools build (Linux / macOS). On Windows use build.bat or the CI commands.
+# FlushTools build (Linux; macOS source builds are not yet validated).
+# On Windows use build.bat or the CI commands.
 #
 #   make            build the shared library into build/
 #   make test       run Odin unit tests
