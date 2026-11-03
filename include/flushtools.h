@@ -5,7 +5,8 @@
  * libflushtools.so, libflushtools.dylib). Link against it and include this
  * header; there is nothing else to configure.
  *
- * Supported targets: 64-bit (x86_64, arm64).
+ * Validated release targets: Linux x86_64 and Windows x86_64. Other targets
+ * are not currently validated.
  * MIT License - Copyright (c) 2026 Austin Clark
  */
 #ifndef FLUSHTOOLS_H
@@ -150,7 +151,8 @@ bool fl_timer_init(fl_timer *timer, int duration_seconds);
 bool fl_timer_reset(fl_timer *timer, int new_duration_seconds);
 double fl_timer_get_elapsed(const fl_timer *timer);
 bool fl_timer_is_finished(const fl_timer *timer);
-/* Blocks until finished; calls `callback` about once per second. */
+/* Blocks until finished; calls callback after each elapsed whole second.
+ * A zero-duration timer completes without invoking the callback. */
 bool fl_timer_run(fl_timer *timer, fl_tick_callback callback, void *user_data);
 
 /* ---------------------------------------------------------------------------
