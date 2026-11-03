@@ -69,6 +69,7 @@ test_array :: proc(t: ^testing.T) {
 	testing.expect(t, (^int)(fl.array_at(&array, 1))^ == 30, "remove preserves order")
 	testing.expect(t, !fl.array_remove(&array, 2), "invalid remove rejected")
 	testing.expect(t, fl.array_push(&array, &b), "push after remove")
+	testing.expect(t, fl.array_push(&array, &a), "fill final slot")
 	testing.expect(t, !fl.array_push(&array, &a), "full array rejects push")
 	fl.array_clear(&array)
 	testing.expect(t, array.count == 0, "clear resets count")
