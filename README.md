@@ -5,8 +5,8 @@
 ![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20windows-lightgrey.svg)
 
 Small systems utilities written in [Odin](https://odin-lang.org) and shipped as a
-shared library with a plain **C ABI**: an arena allocator, bit packing, float
-quantization, a monotonic timer, and a fast non-cryptographic RNG.
+shared library with a plain **C ABI**: an arena allocator, fixed-capacity arrays, bit packing, float quantization,
+a monotonic timer, and a fast non-cryptographic RNG.
 
 Use it from C, C++, Rust, Zig, Python, Odin, or anything else that can call a C
 library. Download one zip, include one header, link one library.
@@ -34,6 +34,7 @@ library. Download one zip, include one header, link one library.
 | Module | What it does |
 |---|---|
 | **Arena** | Bump allocator over a buffer you own. Alignment-correct, overflow-safe. |
+| **Arrays** | Fixed-capacity, bounds-checked arrays over caller-owned storage. No allocations. |
 | **Bit packing** | LSB-first bit writer/reader for compact network packets. Bounds-checked. |
 | **Quantization** | Float to N-bit integer (1 to 32 bits) and back. 16-bit coordinate compression. |
 | **Timer** | Monotonic, fractional-second timer with a per-second callback. |
@@ -193,6 +194,38 @@ rather than crashing.
 | `void *fl_arena_alloc_aligned(fl_arena*, size_t size, size_t alignment)` | Alignment must be a non-zero power of two. Applied to the real address. |
 | `void fl_arena_reset(fl_arena*)` | Release all allocations; the buffer is untouched. |
 | `size_t fl_arena_remaining(const fl_arena*)` | Bytes left, ignoring alignment padding. |
+
+### Fixed-capacity arrays
+
+`fl_array` stores fixed-size elements in a caller-owned buffer. The buffer must be
+aligned for its element type. Push and insert copy one element; the source pointer
+must not alias the array storage. Insert and remove preserve order. Access outside
+`count` returns `NULL`; a full array rejects writes.
+
+```c
+int storage[32];
+fl_array entities;
+fl_array_init(&entities, (uint8_t *)storage, 32, sizeof storage[0]);
+
+int player = 1;
+fl_array_push(&entities, &player);
+int *first = fl_array_at(&entities, 0); /* checked access */
+if (first) *first = 2;
+
+fl_array_remove(&entities, 0);
+fl_array_clear(&entities); /* storage remains yours */
+```
+
+### Arrays
+
+| Function | Description |
+|---|---|
+| `bool fl_array_init(fl_array*, uint8_t*, size_t capacity, size_t element_size)` | Initialise caller-owned storage; rejects invalid sizes and overflow. |
+| `bool fl_array_push(fl_array*, const void*)` | Append one copied element; fails when full. |
+| `bool fl_array_insert(fl_array*, size_t index, const void*)` | Insert before index, preserving order. |
+| `bool fl_array_remove(fl_array*, size_t index)` | Remove and shift later elements left. |
+| `void *fl_array_at(fl_array*, size_t index)` | Checked element pointer or `NULL`. |
+| `void fl_array_clear(fl_array*)` | Set count to zero without clearing storage. |
 
 ### Bit packing (LSB-first, 0 to 32 bits per call)
 
